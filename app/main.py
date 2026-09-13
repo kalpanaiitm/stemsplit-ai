@@ -9,13 +9,14 @@ import shutil
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 OUTPUT_DIR = BASE_DIR / "outputs"
+STATIC_DIR = BASE_DIR / "static"
 UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 ALLOWED_SUFFIXES = {".mp3", ".wav", ".flac", ".m4a", ".ogg"}
 MAX_BYTES = 50 * 1024 * 1024
 
-app = FastAPI(title="StemSplit AI API", version="0.1.0")
+app = FastAPI(title="StemSplit AI API", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,6 +25,13 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+@app.get("/", include_in_schema=False)
+def home():
+    index = STATIC_DIR / "index.html"
+    if not index.exists():
+        raise HTTPException(status_code=404, detail="Web interface not found")
+    return FileResponse(index, media_type="text/html")
 
 @app.get("/health")
 def health():
