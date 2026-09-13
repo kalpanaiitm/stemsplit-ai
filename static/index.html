@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StemSplit AI</title>
+  <style>
+    body{font-family:Arial,sans-serif;max-width:860px;margin:40px auto;padding:0 20px;background:#111827;color:#f9fafb}
+    .card{background:#1f2937;border-radius:18px;padding:28px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    h1{margin-top:0}.muted{color:#9ca3af}input,button{font-size:16px}
+    input{margin:16px 0;width:100%}button{padding:12px 18px;border:0;border-radius:10px;cursor:pointer;font-weight:700}
+    #status{margin:18px 0}.stem{background:#111827;padding:16px;border-radius:12px;margin:12px 0}
+    .stem h3{margin:0 0 10px;text-transform:capitalize}audio{width:100%}.download{display:inline-block;margin-top:8px;color:#93c5fd}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>StemSplit AI</h1>
+    <p class="muted">Upload an audio file and separate it into vocals, drums, bass, guitar, piano and other.</p>
+    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.ogg" />
+    <button id="go">Separate track</button>
+    <div id="status"></div>
+    <div id="results"></div>
+  </div>
+<script>
+const go=document.getElementById('go');
+const fileInput=document.getElementById('file');
+const statusEl=document.getElementById('status');
+const results=document.getElementById('results');
+
+go.addEventListener('click', async () => {
+  const file=fileInput.files[0];
+  if(!file){statusEl.textContent='Choose an audio file first.';return;}
+  go.disabled=true; results.innerHTML=''; statusEl.textContent='Separating your track… this can take a minute on CPU.';
+  const form=new FormData(); form.append('file',file);
+  try{
+    const res=await fetch('/separate',{method:'POST',body:form});
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.detail || 'Separation failed');
+    statusEl.textContent='Done. Your stems are ready.';
+    Object.entries(data.stems).forEach(([name,url])=>{
+      const box=document.createElement('div'); box.className='stem';
+      box.innerHTML=`<h3>${name}</h3><audio controls src="${url}"></audio><a class="download" href="${url}" download="${name}.wav">Download ${name}.wav</a>`;
+      results.appendChild(box);
+    });
+  }catch(err){statusEl.textContent='Error: '+err.message;}
+  finally{go.disabled=false;}
+});
+</script>
+</body>
+</html>
