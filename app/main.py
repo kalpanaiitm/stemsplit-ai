@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import uuid
 import shutil
+import zipfile
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -103,4 +104,25 @@ def get_stem(job_id: str, stem: str):
         candidates[0],
         media_type="audio/wav",
         filename=f"{stem}.wav",
+    )
+@app.get("/jobs/{job_id}/download-all")
+def download_all_stems(job_id: str):
+    job_dir = OUTPUT_DIR / job_id / "htdemucs_6s"
+
+    if not job_dir.exists():
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    zip_path = OUTPUT_DIR / f"{job_id}-stems.zip"
+
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for stem in ["vocals", "drums", "bass", "guitar", "piano", "other"]:
+            stem_file = job_dir / f"{stem}.wav"
+
+            if stem_file.exists():
+                zip_file.write(stem_file, arcname=f"{stem}.wav")
+
+    return FileResponse(
+        zip_path,
+        media_type="application/zip",
+        filename="stemsplit-all-stems.zip"
     )
