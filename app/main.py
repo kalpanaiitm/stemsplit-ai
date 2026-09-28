@@ -6,6 +6,7 @@ import subprocess
 import uuid
 import shutil
 import zipfile
+import re
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -92,6 +93,11 @@ async def separate(file: UploadFile = File(...)):
 
 @app.get("/jobs/{job_id}/{stem}")
 def get_stem(job_id: str, stem: str):
+    if not re.fullmatch(r"[0-9a-f]{32}", job_id):
+        raise HTTPException(status_code=404, detail="Job not found")
+    # The generic stem route is registered first, so dispatch this fixed path.
+    if stem == "download-all":
+        return download_all_stems(job_id)
     if stem not in {"vocals", "drums", "bass", "guitar", "piano", "other"}:
         raise HTTPException(status_code=404, detail="Unknown stem")
 
@@ -107,6 +113,8 @@ def get_stem(job_id: str, stem: str):
     )
 @app.get("/jobs/{job_id}/download-all")
 def download_all_stems(job_id: str):
+    if not re.fullmatch(r"[0-9a-f]{32}", job_id):
+        raise HTTPException(status_code=404, detail="Job not found")
     job_dir = OUTPUT_DIR / job_id / "htdemucs_6s"
 
     if not job_dir.exists():
@@ -116,10 +124,13 @@ def download_all_stems(job_id: str):
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for stem in ["vocals", "drums", "bass", "guitar", "piano", "other"]:
-            stem_file = job_dir / f"{stem}.wav"
-
-            if stem_file.exists():
+            for stem_file in job_dir.glob(f"*/{stem}.wav"):
                 zip_file.write(stem_file, arcname=f"{stem}.wav")
+                break
+
+    if not zipfile.ZipFile(zip_path).namelist():
+        zip_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=404, detail="No stems found")
 
     return FileResponse(
         zip_path,

@@ -101,3 +101,11 @@ Before public launch also add:
 
 ## Privacy
 The MVP writes temporary uploads and generated stems to disk. Uploaded source files are deleted after separation. Generated stems remain until manually removed. Add automatic expiry before public deployment.
+
+## Test
+
+Install `requirements-dev.txt` for a full development environment and run `python -m pytest -q`. The endpoint tests use a fabricated Demucs output folder; they do not run inference or measure audio quality. CI installs only the API/test dependencies for those mocked tests.
+
+## Engineering evidence
+
+See [project blueprint](PROJECT_BLUEPRINT.md), [architecture](ARCHITECTURE.md), [test report](TEST_REPORT.md) and [changelog](CHANGELOG.md) for implemented scope, verification and next milestones. These documents follow the human-controlled App Development Playbook; planned features are not represented as implemented.
